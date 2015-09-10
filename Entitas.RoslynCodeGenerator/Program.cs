@@ -15,7 +15,7 @@ public class Program {
 
         var codeGenerators = new ICodeGenerator[] {
             new ComponentExtensionsGenerator(),
-//            new IndicesLookupGenerator(),
+            new IndicesLookupGenerator(),
             new PoolAttributeGenerator(),
             new PoolsGenerator(),
             new SystemExtensionsGenerator()
