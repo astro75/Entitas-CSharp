@@ -97,7 +97,7 @@ namespace Entitas.CodeGenerator {
             return type.GetAttributes()
                 .Aggregate(new List<string>(), (poolNames, attr) => {
                     if (attr.AttributeClass.ToString() == typeof(PoolAttribute).FullName) {
-                        poolNames.Add(attr.ConstructorArguments[0].ToString());
+                        poolNames.Add(attr.ConstructorArguments[0].Value.ToString());
                     }
 
                     return poolNames;
