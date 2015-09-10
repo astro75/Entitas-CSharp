@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 
 namespace Entitas.CodeGenerator {
     public static class TypeGenerator {
@@ -23,24 +24,25 @@ namespace Entitas.CodeGenerator {
             { "System.String", "string" }
         };
 
-        public static string Generate(Type type) {
-            if (_builtInTypes.ContainsKey(type.FullName)) {
-                return _builtInTypes[type.FullName];
-            }
-            if (type.IsGenericType) {
-                return generateGenericTypeString(type);
-            }
-            if (type.IsArray) {
-                return generateArrayString(type);
-            }
-            if (type.IsNested) {
-                return type.FullName.Replace('+', '.');
-            }
-
-            return type.FullName;
+        public static string Generate(ITypeSymbol type) {
+            return type.ToString();
+//            if (_builtInTypes.ContainsKey(type.FullName)) {
+//                return _builtInTypes[type.FullName];
+//            }
+//            if (type.IsGenericType) {
+//                return generateGenericTypeString(type);
+//            }
+//            if (type.IsArray) {
+//                return generateArrayString(type);
+//            }
+//            if (type.IsNested) {
+//                return type.FullName.Replace('+', '.');
+//            }
+//
+//            return type.FullName;
         }
 
-        static string generateGenericTypeString(Type type) {
+/*        static string generateGenericTypeString(Type type) {
             var genericMainType = type.FullName.Split('`')[0];
             var genericArguments = type.GetGenericArguments()
                 .Select(arg => Generate(arg)).ToArray();
@@ -55,6 +57,6 @@ namespace Entitas.CodeGenerator {
             }
 
             return Generate(type.GetElementType()) + "[" + rankString + "]";
-        }
+        }*/
     }
 }

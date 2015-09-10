@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
-using RoslynGenerator;
 
 namespace Entitas.RoslynCodeGenerator {
     public class RoslynGenerator {
@@ -26,6 +25,18 @@ namespace Entitas.RoslynCodeGenerator {
                     }
                 }*/
             }
+            return sol;
+        }
+
+        public static INamedTypeSymbol[] getClasses(Solution sol) {
+            var allClasses = new List<INamedTypeSymbol>();
+            foreach (var doc in sol.allDocs()) {
+                var root = doc.GetSyntaxRootAsync().Result;
+                var model = doc.GetSemanticModelAsync().Result;
+                var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+                allClasses.AddRange(classes.Select(cd => model.GetDeclaredSymbol(cd)));
+            }
+            return allClasses.ToArray();
         }
     }
 }

@@ -1,11 +1,12 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 
 namespace Entitas.CodeGenerator {
     public class IndicesLookupGenerator : IComponentCodeGenerator, IPoolCodeGenerator {
 
-        public CodeGenFile[] Generate(Type[] components) {
+        public CodeGenFile[] Generate(INamedTypeSymbol[] components) {
             var sortedComponents = components.OrderBy(type => type.ToString()).ToArray();
             return getLookups(sortedComponents)
                 .Aggregate(new List<CodeGenFile>(), (files, lookup) => {
@@ -169,4 +170,4 @@ public partial class {0}Matcher : AllOfMatcher {{
             return tag.Replace(CodeGenerator.defaultIndicesLookupTag, string.Empty);
         }
     }
-}
+}*/

@@ -22,10 +22,10 @@ namespace Entitas.CodeGenerator {
                 writeFiles(dir, generator.Generate(components));
             }
 
-            var systems = GetSystems(classes);
-            foreach (var generator in codeGenerators.OfType<ISystemCodeGenerator>()) {
-                writeFiles(dir, generator.Generate(systems));
-            }
+//            var systems = GetSystems(classes);
+//            foreach (var generator in codeGenerators.OfType<ISystemCodeGenerator>()) {
+//                writeFiles(dir, generator.Generate(systems));
+//            }
         }
 
         public static string GetSafeDir(string dir) {
@@ -87,18 +87,17 @@ namespace Entitas.CodeGenerator {
     }
 
     public static class CodeGeneratorExtensions {
-        public static string RemoveComponentSuffix(this Type type) {
+        public static string RemoveComponentSuffix(this INamedTypeSymbol type) {
             return type.Name.EndsWith(CodeGenerator.componentSuffix)
                         ? type.Name.Substring(0, type.Name.Length - CodeGenerator.componentSuffix.Length)
                         : type.Name;
         }
 
-        public static string[] PoolNames(this Type type) {
-            return Attribute.GetCustomAttributes(type)
+        public static string[] PoolNames(this INamedTypeSymbol type) {
+            return type.GetAttributes()
                 .Aggregate(new List<string>(), (poolNames, attr) => {
-                    var poolAttribute = attr as PoolAttribute;
-                    if (poolAttribute != null) {
-                        poolNames.Add(poolAttribute.tag);
+                    if (attr.AttributeClass.ToString() == typeof(PoolAttribute).FullName) {
+                        poolNames.Add(attr.ConstructorArguments[0].ToString());
                     }
 
                     return poolNames;
@@ -107,7 +106,7 @@ namespace Entitas.CodeGenerator {
                 .ToArray();
         }
 
-        public static string[] IndicesLookupTags(this Type type) {
+        public static string[] IndicesLookupTags(this INamedTypeSymbol type) {
             var poolNames = type.PoolNames();
             if (poolNames.Length == 0) {
                 return new [] { CodeGenerator.defaultIndicesLookupTag };
