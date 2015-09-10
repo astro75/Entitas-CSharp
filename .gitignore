@@ -22,6 +22,10 @@ test-results
 bin
 !bin/Entitas.zip
 
+#Nuget
+packages/
+
+
 Entitas.Unity/Entitas.Unity-csharp.sln
 Entitas.Unity/Entitas.Unity.sln
 Entitas.Unity.CodeGenerator/Entitas.Unity.CodeGenerator-csharp.sln

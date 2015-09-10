@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4D7C8232-6930-4F13-9D9A-3C32A340BB62}</ProjectGuid>
+    <ProjectGuid>{687F853C-AF2A-4223-821F-C8C5E20F1D6F}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Entitas.CodeGenerator</RootNamespace>
     <AssemblyName>Entitas.CodeGenerator</AssemblyName>
@@ -50,11 +50,7 @@
     <Compile Include="Entitas.CodeGenerator\ICodeGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <Folder Include="Entitas.CodeGenerator\" />
-    <Folder Include="Entitas.CodeGenerator\Generators\" />
-    <Folder Include="Entitas.CodeGenerator\Attributes\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\Entitas\Entitas.csproj">
       <Project>{A0A11CC3-8B1E-4345-A5FA-01FC60E581D8}</Project>
