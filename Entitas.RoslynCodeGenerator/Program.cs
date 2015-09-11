@@ -18,7 +18,7 @@ public class Program {
             new IndicesLookupGenerator(),
             new PoolAttributeGenerator(),
             new PoolsGenerator(),
-            new SystemExtensionsGenerator()
+//            new SystemExtensionsGenerator()
         };
 
         CodeGenerator.Generate(classes, new string[0], "Generated/", codeGenerators);

@@ -22,10 +22,10 @@ namespace Entitas.CodeGenerator {
                 writeFiles(dir, generator.Generate(components));
             }
 
-//            var systems = GetSystems(classes);
-//            foreach (var generator in codeGenerators.OfType<ISystemCodeGenerator>()) {
-//                writeFiles(dir, generator.Generate(systems));
-//            }
+            var systems = GetSystems(classes);
+            foreach (var generator in codeGenerators.OfType<ISystemCodeGenerator>()) {
+                writeFiles(dir, generator.Generate(systems));
+            }
         }
 
         public static string GetSafeDir(string dir) {

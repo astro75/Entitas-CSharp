@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
 
 namespace Entitas.CodeGenerator {
     public interface ISystemCodeGenerator : ICodeGenerator {
-        CodeGenFile[] Generate(Type[] systems);
+        CodeGenFile[] Generate(INamedTypeSymbol[] systems);
     }
 }
 
