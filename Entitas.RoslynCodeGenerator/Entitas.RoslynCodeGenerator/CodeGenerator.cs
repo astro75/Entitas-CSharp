@@ -108,8 +108,8 @@ namespace Entitas.CodeGenerator {
         public static string[] PoolNames(this ClassDeclarationSyntax type) {
             return type.AllAttributes()
                 .Aggregate(new List<string>(), (poolNames, attr) => {
-                    if (attr.Name.ToString() == typeof(PoolAttribute).Name) {
-                        poolNames.Add(attr.ArgumentList.Arguments[0].ToString());
+                    if (attr.Name.ToString() == "Pool") {
+                        poolNames.Add(((LiteralExpressionSyntax) attr.ArgumentList.Arguments[0].Expression).Token.ValueText);
                     }
                     return poolNames;
                 })

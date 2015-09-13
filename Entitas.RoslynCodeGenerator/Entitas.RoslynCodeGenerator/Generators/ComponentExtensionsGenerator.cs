@@ -24,7 +24,7 @@ namespace Entitas.CodeGenerator {
 
         static bool shouldGenerate(ClassDeclarationSyntax type) {
             return type.AllAttributes()
-                .All(attr => attr.Name.ToString() != typeof (DontGenerateAttribute).Name);
+                .All(attr => attr.Name.ToString() != "DontGenerate");
         }
 
         static string generateComponentExtension(ClassDeclarationSyntax type) {
@@ -305,7 +305,7 @@ $assign
 
         static bool isSingleEntity(ClassDeclarationSyntax type) {
             return type.AllAttributes()
-                .Any(attr => attr.Name.ToString() == typeof(SingleEntityAttribute).Name);
+                .Any(attr => attr.Name.ToString() == "SingleEntity");
         }
 
         static bool isSingletonComponent(ClassDeclarationSyntax type) {

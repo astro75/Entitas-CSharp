@@ -77,7 +77,7 @@ namespace Entitas.CodeGenerator {
 
         static bool shouldGenerate(ClassDeclarationSyntax type) {
             return type.AllAttributes()
-                .Where(attr => attr.Name.ToString() == typeof(DontGenerateAttribute).Name)
+                .Where(attr => attr.Name.ToString() == "DontGenerate")
                 .All(attr => attr.ArgumentList.Arguments[0].ToString() == "true");
         }
 

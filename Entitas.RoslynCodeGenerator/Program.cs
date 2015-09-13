@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 public class Program {
     public static void Main(string[] args) {
-        if (args.Length == 0) throw new ArgumentOutOfRangeException("args");
+        if (args.Length != 2) throw new ArgumentOutOfRangeException("args");
 
         var classes = Directory.EnumerateFiles(args[0], "*.cs", SearchOption.AllDirectories)
             .Select(name => CSharpSyntaxTree.ParseText(File.ReadAllText(name)))
@@ -41,7 +41,7 @@ public class CoinsComponent : IComponent {
 //            new SystemExtensionsGenerator()
         };
 
-        CodeGenerator.Generate(classes.ToArray(), new string[0], "Generated/", codeGenerators);
+        CodeGenerator.Generate(classes.ToArray(), new string[0], args[1], codeGenerators);
 
         Console.WriteLine("Done. Press any key...");
         Console.Read();
