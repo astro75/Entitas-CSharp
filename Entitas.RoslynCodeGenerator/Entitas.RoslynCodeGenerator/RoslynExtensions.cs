@@ -9,9 +9,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Entitas.RoslynCodeGenerator {
     internal static class RoslynExtensions {
-        public static IEnumerable<Document> allDocs(this Solution sol) {
-            return sol.Projects.SelectMany(s => s.Documents).Where(doc => !doc.Name.EndsWith(".generated.cs"));
-        }
+//        public static IEnumerable<Document> allDocs(this Solution sol) {
+//            return sol.Projects.SelectMany(s => s.Documents).Where(doc => !doc.Name.EndsWith(".generated.cs"));
+//        }
 
         public static bool has(this BasePropertyDeclarationSyntax decl, SyntaxKind kind) {
             return decl.Modifiers.has(kind);

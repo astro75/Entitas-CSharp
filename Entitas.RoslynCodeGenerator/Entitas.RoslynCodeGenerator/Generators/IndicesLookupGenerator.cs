@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Entitas.CodeGenerator {
     public class IndicesLookupGenerator : IComponentCodeGenerator, IPoolCodeGenerator {
 
-        public CodeGenFile[] Generate(INamedTypeSymbol[] components) {
+        public CodeGenFile[] Generate(ClassDeclarationSyntax[] components) {
             var sortedComponents = components.OrderBy(type => type.ToString()).ToArray();
             return getLookups(sortedComponents)
                 .Aggregate(new List<CodeGenFile>(), (files, lookup) => {
@@ -19,7 +20,7 @@ namespace Entitas.CodeGenerator {
         }
 
         public CodeGenFile[] Generate(string[] poolNames) {
-            var noTypes = new INamedTypeSymbol[0];
+            var noTypes = new ClassDeclarationSyntax[0];
             if (poolNames.Length == 0) {
                 poolNames = new [] { string.Empty };
             }
@@ -34,24 +35,24 @@ namespace Entitas.CodeGenerator {
                 }).ToArray();
         }
 
-        static Dictionary<string, INamedTypeSymbol[]> getLookups(INamedTypeSymbol[] components) {
+        static Dictionary<string, ClassDeclarationSyntax[]> getLookups(ClassDeclarationSyntax[] components) {
             var currentIndex = 0;
             var orderedComponents = components
                 .Where(shouldGenerate)
-                .Aggregate(new Dictionary<INamedTypeSymbol, string[]>(), (acc, type) => {
+                .Aggregate(new Dictionary<ClassDeclarationSyntax, string[]>(), (acc, type) => {
                     acc.Add(type, type.IndicesLookupTags());
                     return acc;
                 })
                 .OrderByDescending(kv => kv.Value.Length);
 
             return orderedComponents
-                .Aggregate(new Dictionary<string, INamedTypeSymbol[]>(), (lookups, kv) => {
+                .Aggregate(new Dictionary<string, ClassDeclarationSyntax[]>(), (lookups, kv) => {
                     var type = kv.Key;
                     var lookupTags = kv.Value;
                     var incrementIndex = false;
                     foreach (var lookupTag in lookupTags) {
                         if (!lookups.ContainsKey(lookupTag)) {
-                            lookups.Add(lookupTag, new INamedTypeSymbol[components.Length]);
+                            lookups.Add(lookupTag, new ClassDeclarationSyntax[components.Length]);
                         }
 
                         var types = lookups[lookupTag];
@@ -74,14 +75,13 @@ namespace Entitas.CodeGenerator {
                 });
         }
 
-        static bool shouldGenerate(INamedTypeSymbol type) {
-            //TODO: test
-            return type.GetAttributes()
-                .Where(attr => attr.AttributeClass.ToString() == typeof(DontGenerateAttribute).FullName)
-                .All(attr => attr.ConstructorArguments[0].ToString() == "true");
+        static bool shouldGenerate(ClassDeclarationSyntax type) {
+            return type.AllAttributes()
+                .Where(attr => attr.Name.ToString() == typeof(DontGenerateAttribute).Name)
+                .All(attr => attr.ArgumentList.Arguments[0].ToString() == "true");
         }
 
-        static string generateIndicesLookup(string tag, INamedTypeSymbol[] components) {
+        static string generateIndicesLookup(string tag, ClassDeclarationSyntax[] components) {
             return addClassHeader(tag)
                     + addIndices(components)
                     + addIdToString(components)
@@ -97,7 +97,7 @@ namespace Entitas.CodeGenerator {
             return code;
         }
 
-        static string addIndices(INamedTypeSymbol[] components) {
+        static string addIndices(ClassDeclarationSyntax[] components) {
             const string fieldFormat = "    public const int {0} = {1};\n";
             const string totalFormat = "    public const int TotalComponents = {0};";
             var code = string.Empty;
@@ -111,7 +111,7 @@ namespace Entitas.CodeGenerator {
             return code + "\n" + string.Format(totalFormat, components.Count(type => type != null));
         }
 
-        static string addIdToString(INamedTypeSymbol[] components) {
+        static string addIdToString(ClassDeclarationSyntax[] components) {
             const string format = "        \"{1}\",\n";
             var code = string.Empty;
             for (int i = 0; i < components.Length; i++) {

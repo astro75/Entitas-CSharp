@@ -1,8 +1,9 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Entitas.CodeGenerator {
     public interface ISystemCodeGenerator : ICodeGenerator {
-        CodeGenFile[] Generate(INamedTypeSymbol[] systems);
+        CodeGenFile[] Generate(ClassDeclarationSyntax[] systems);
     }
 }
 

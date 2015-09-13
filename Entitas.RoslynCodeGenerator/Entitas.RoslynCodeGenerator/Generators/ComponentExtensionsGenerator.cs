@@ -1,38 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using Entitas.RoslynCodeGenerator;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Entitas.CodeGenerator {
     public class ComponentExtensionsGenerator : IComponentCodeGenerator {
 
         const string classSuffix = "GeneratedExtension";
 
-        public CodeGenFile[] Generate(INamedTypeSymbol[] components) {
+        public CodeGenFile[] Generate(ClassDeclarationSyntax[] components) {
             return components
                     .Where(shouldGenerate)
                     .Aggregate(new List<CodeGenFile>(), (files, type) => {
                         files.Add(new CodeGenFile {
-                            fileName = type + classSuffix,
+                            fileName = type.Identifier.Text + classSuffix,
                             fileContent = generateComponentExtension(type).ToUnixLineEndings()
                         });
                         return files;
                     }).ToArray();
         }
 
-        static bool shouldGenerate(INamedTypeSymbol type) {
-            return !type.GetAttributes()
-                .Any(attr => attr.AttributeClass.ToString() == typeof(DontGenerateAttribute).FullName);
+        static bool shouldGenerate(ClassDeclarationSyntax type) {
+            return type.AllAttributes()
+                .All(attr => attr.Name.ToString() != typeof (DontGenerateAttribute).Name);
         }
 
-        static string generateComponentExtension(INamedTypeSymbol type) {
+        static string generateComponentExtension(ClassDeclarationSyntax type) {
             return type.PoolNames().Length == 0
                         ? addDefaultPoolCode(type)
                         : addCustomPoolCode(type);
         }
 
-        static string addDefaultPoolCode(INamedTypeSymbol type) {
+        static string addDefaultPoolCode(ClassDeclarationSyntax type) {
             var code = addComponentPoolUsings(type);
             code += addNamespace();
             code += addEntityMethods(type);
@@ -44,7 +45,7 @@ namespace Entitas.CodeGenerator {
             return code;
         }
 
-        static string addCustomPoolCode(INamedTypeSymbol type) {
+        static string addCustomPoolCode(ClassDeclarationSyntax type) {
             var code = addComponentPoolUsings(type);
             code += addUsings();
             code += addNamespace();
@@ -57,7 +58,7 @@ namespace Entitas.CodeGenerator {
             return code;
         }
 
-        static string addComponentPoolUsings(INamedTypeSymbol type) {
+        static string addComponentPoolUsings(ClassDeclarationSyntax type) {
             return isSingletonComponent(type)
                 ? string.Empty
                 : "using System.Collections.Generic;\n\n";
@@ -81,7 +82,7 @@ namespace Entitas.CodeGenerator {
          *
          */
 
-        static string addEntityMethods(INamedTypeSymbol type) {
+        static string addEntityMethods(ClassDeclarationSyntax type) {
             return addEntityClassHeader()
                     + addGetMethods(type)
                     + addHasMethods(type)
@@ -96,14 +97,14 @@ namespace Entitas.CodeGenerator {
             return "\n    public partial class Entity {";
         }
 
-        static string addGetMethods(INamedTypeSymbol type) {
+        static string addGetMethods(ClassDeclarationSyntax type) {
             var getMethod = isSingletonComponent(type) ?
                 "\n        static readonly $Type $nameComponent = new $Type();\n" :
                 "\n        public $Type $name { get { return ($Type)GetComponent($Ids.$Name); } }\n";
             return buildString(type, getMethod);
         }
 
-        static string addHasMethods(INamedTypeSymbol type) {
+        static string addHasMethods(ClassDeclarationSyntax type) {
             var hasMethod = isSingletonComponent(type) ? @"
         public bool is$Name {
             get { return HasComponent($Ids.$Name); }
@@ -128,7 +129,7 @@ namespace Entitas.CodeGenerator {
             return buildString(type, hasMethod);
         }
 
-        static string addComponentPoolMethods(INamedTypeSymbol type) {
+        static string addComponentPoolMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         static readonly Stack<$Type> _$nameComponentPool = new Stack<$Type>();
 
@@ -138,7 +139,7 @@ namespace Entitas.CodeGenerator {
 ");
         }
 
-        static string addAddMethods(INamedTypeSymbol type) {
+        static string addAddMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         public Entity Add$Name($typedArgs) {
             var component = _$nameComponentPool.Count > 0 ? _$nameComponentPool.Pop() : new $Type();
@@ -148,7 +149,7 @@ $assign
 ");
         }
 
-        static string addReplaceMethods(INamedTypeSymbol type) {
+        static string addReplaceMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         public Entity Replace$Name($typedArgs) {
             var previousComponent = has$Name ? $name : null;
@@ -163,7 +164,7 @@ $assign
 ");
         }
 
-        static string addRemoveMethods(INamedTypeSymbol type) {
+        static string addRemoveMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         public Entity Remove$Name() {
             var component = $name;
@@ -180,7 +181,7 @@ $assign
          *
          */
 
-        static string addPoolMethods(INamedTypeSymbol type) {
+        static string addPoolMethods(ClassDeclarationSyntax type) {
             return addPoolClassHeader(type)
                     + addPoolGetMethods(type)
                     + addPoolHasMethods(type)
@@ -190,11 +191,11 @@ $assign
                     + addCloseClass();
         }
 
-        static string addPoolClassHeader(INamedTypeSymbol type) {
+        static string addPoolClassHeader(ClassDeclarationSyntax type) {
             return buildString(type, "\n    public partial class Pool {");
         }
 
-        static string addPoolGetMethods(INamedTypeSymbol type) {
+        static string addPoolGetMethods(ClassDeclarationSyntax type) {
             var getMehod = isSingletonComponent(type) ? @"
         public Entity $nameEntity { get { return GetGroup($TagMatcher.$Name).GetSingleEntity(); } }
 " : @"
@@ -205,7 +206,7 @@ $assign
             return buildString(type, getMehod);
         }
 
-        static string addPoolHasMethods(INamedTypeSymbol type) {
+        static string addPoolHasMethods(ClassDeclarationSyntax type) {
             var hasMethod = isSingletonComponent(type) ? @"
         public bool is$Name {
             get { return $nameEntity != null; }
@@ -226,7 +227,7 @@ $assign
             return buildString(type, hasMethod);
         }
 
-        static object addPoolAddMethods(INamedTypeSymbol type) {
+        static object addPoolAddMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         public Entity Set$Name($typedArgs) {
             if (has$Name) {
@@ -239,7 +240,7 @@ $assign
 ");
         }
 
-        static string addPoolReplaceMethods(INamedTypeSymbol type) {
+        static string addPoolReplaceMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         public Entity Replace$Name($typedArgs) {
             var entity = $nameEntity;
@@ -254,7 +255,7 @@ $assign
 ");
         }
 
-        static string addPoolRemoveMethods(INamedTypeSymbol type) {
+        static string addPoolRemoveMethods(ClassDeclarationSyntax type) {
             return isSingletonComponent(type) ? string.Empty : buildString(type, @"
         public void Remove$Name() {
             DestroyEntity($nameEntity);
@@ -268,7 +269,7 @@ $assign
         *
         */
 
-        static string addMatcher(INamedTypeSymbol type) {
+        static string addMatcher(ClassDeclarationSyntax type) {
             const string matcherFormat = @"
     public partial class $TagMatcher {
         static AllOfMatcher _matcher$Name;
@@ -302,19 +303,19 @@ $assign
          *
          */
 
-        static bool isSingleEntity(INamedTypeSymbol type) {
-            return type.GetAttributes()
-                .Any(attr => attr.AttributeClass.ToString() == typeof(SingleEntityAttribute).FullName);
+        static bool isSingleEntity(ClassDeclarationSyntax type) {
+            return type.AllAttributes()
+                .Any(attr => attr.Name.ToString() == typeof(SingleEntityAttribute).Name);
         }
 
-        static bool isSingletonComponent(INamedTypeSymbol type) {
-            // todo: public
-            return !type.GetMembers().OfType<IFieldSymbol>().Any(f => !f.IsStatic);
+        static bool isSingletonComponent(ClassDeclarationSyntax type) {
+            return !type.Members.OfType<FieldDeclarationSyntax>()
+                .Any(f => f.Modifiers.hasNot(SyntaxKind.StaticKeyword) && f.Modifiers.has(SyntaxKind.PublicKeyword));
         }
 
-        static string buildString(INamedTypeSymbol type, string format) {
+        static string buildString(ClassDeclarationSyntax type, string format) {
             format = createFormatString(format);
-            var a0_type = type;
+            var a0_type = type.Identifier.Text;
             var a1_name = type.RemoveComponentSuffix();
             var a2_lowercaseName = a1_name.LowercaseFirst();
             var poolNames = type.PoolNames();
@@ -330,10 +331,12 @@ $assign
                 a3_tag, a4_ids, a5_fieldNamesWithType, a6_fieldAssigns, a7_fieldNames);
         }
 
-        static MemberTypeNameInfo[] getFieldInfos(INamedTypeSymbol type) {
-            // TODO: only public
-            return type.GetMembers().OfType<IFieldSymbol>().Where(f => !f.IsStatic)
-                .Select(field => new MemberTypeNameInfo { name = field.Name, type = field.Type })
+        static MemberTypeNameInfo[] getFieldInfos(ClassDeclarationSyntax type) {
+            return type.Members.OfType<FieldDeclarationSyntax>()
+                .Where(f => f.Modifiers.hasNot(SyntaxKind.StaticKeyword) && f.Modifiers.has(SyntaxKind.PublicKeyword))
+                .SelectMany(field => field.Declaration.Variables.Select(v => 
+                    new MemberTypeNameInfo { name = v.Identifier.Text, type = field.Declaration.Type.ToString() }
+                ))
                 .ToArray();
         }
 
@@ -353,7 +356,7 @@ $assign
         static string fieldNamesWithType(MemberTypeNameInfo[] infos) {
             var typedArgs = infos.Select(info => {
                 var newArg = "new" + info.name.UppercaseFirst();
-                var typeString = TypeGenerator.Generate(info.type);
+                var typeString = info.type;
                 return typeString + " " + newArg;
             }).ToArray();
 
@@ -382,7 +385,7 @@ $assign
 
     struct MemberTypeNameInfo {
         public string name;
-        public ITypeSymbol type;
+        public string type;
     }
 }
 

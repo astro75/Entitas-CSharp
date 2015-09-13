@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Entitas.CodeGenerator {
     public static class CodeGenerator {
         public const string componentSuffix = "Component";
         public const string defaultIndicesLookupTag = "ComponentIds";
 
-        public static void Generate(INamedTypeSymbol[] classes, string[] poolNames, string dir, ICodeGenerator[] codeGenerators) {
+        public static void Generate(ClassDeclarationSyntax[] classes, string[] poolNames, string dir, ICodeGenerator[] codeGenerators) {
+            //TODO: parallel processing
             dir = GetSafeDir(dir);
             CleanDir(dir);
             
@@ -54,24 +56,33 @@ namespace Entitas.CodeGenerator {
             }
         }
 
-        public static INamedTypeSymbol[] GetComponents(INamedTypeSymbol[] types) {
-            var iComponentName = typeof(IComponent).FullName;
+        public static ClassDeclarationSyntax[] GetComponents(ClassDeclarationSyntax[] types) {
+            var iComponentName = typeof(IComponent).Name;
             return types
-                .Where(type => type.Interfaces.Any(i => i.ToString() == iComponentName))
+                .Where(type => type.BaseList != null && type.BaseList.Types.Any(b => b.Type.ToString() == iComponentName))
                 .ToArray();
         }
 
-        public static INamedTypeSymbol[] GetSystems(INamedTypeSymbol[] types) {
-            var reactiveSystemName = typeof(ReactiveSystem).FullName;
-            var systemsName = typeof(Systems).FullName;
-            var iSystemName = typeof(ISystem).FullName;
+        public static ClassDeclarationSyntax[] GetSystems(ClassDeclarationSyntax[] types) {
+            var reactiveSystemName = typeof(ReactiveSystem).Name;
+            var systemsName = typeof(Systems).Name;
+            // TODO: get derived types dynamically?
+            // Also no generator is using this 
+            var iSystemNames = new [] {
+                typeof(ISystem).Name,
+                typeof(IExecuteSystem).Name,
+                typeof(IInitializeSystem).Name,
+                typeof(IReactiveSystem).Name,
+                typeof(IReactiveExecuteSystem).Name
+            };
 
             return types
                 .Where(type => {
-                    var name = type.ToString();
+                    var name = type.Identifier.Text;
                     return name != reactiveSystemName
                            && name != systemsName
-                           && type.AllInterfaces.Any(i => i.ToString() == iSystemName);
+                           && type.BaseList != null
+                           && type.BaseList.Types.Any(b => iSystemNames.Contains(b.Type.ToString()));
                 })
                 .ToArray();
         }
@@ -87,26 +98,26 @@ namespace Entitas.CodeGenerator {
     }
 
     public static class CodeGeneratorExtensions {
-        public static string RemoveComponentSuffix(this INamedTypeSymbol type) {
-            return type.Name.EndsWith(CodeGenerator.componentSuffix)
-                        ? type.Name.Substring(0, type.Name.Length - CodeGenerator.componentSuffix.Length)
-                        : type.Name;
+        public static string RemoveComponentSuffix(this ClassDeclarationSyntax type) {
+            var name = type.Identifier.Text;
+            return name.EndsWith(CodeGenerator.componentSuffix)
+                        ? name.Substring(0, name.Length - CodeGenerator.componentSuffix.Length)
+                        : name;
         }
 
-        public static string[] PoolNames(this INamedTypeSymbol type) {
-            return type.GetAttributes()
+        public static string[] PoolNames(this ClassDeclarationSyntax type) {
+            return type.AllAttributes()
                 .Aggregate(new List<string>(), (poolNames, attr) => {
-                    if (attr.AttributeClass.ToString() == typeof(PoolAttribute).FullName) {
-                        poolNames.Add(attr.ConstructorArguments[0].Value.ToString());
+                    if (attr.Name.ToString() == typeof(PoolAttribute).Name) {
+                        poolNames.Add(attr.ArgumentList.Arguments[0].ToString());
                     }
-
                     return poolNames;
                 })
                 .OrderBy(poolName => poolName)
                 .ToArray();
         }
 
-        public static string[] IndicesLookupTags(this INamedTypeSymbol type) {
+        public static string[] IndicesLookupTags(this ClassDeclarationSyntax type) {
             var poolNames = type.PoolNames();
             if (poolNames.Length == 0) {
                 return new [] { CodeGenerator.defaultIndicesLookupTag };
@@ -127,6 +138,10 @@ namespace Entitas.CodeGenerator {
 
         public static string ToUnixLineEndings(this string str) {
             return str.Replace(Environment.NewLine, "\n");
+        }
+
+        public static IEnumerable<AttributeSyntax> AllAttributes(this ClassDeclarationSyntax type) {
+            return type.AttributeLists.SelectMany(l => l.Attributes);
         }
     }
 }
