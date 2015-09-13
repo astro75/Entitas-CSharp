@@ -59,9 +59,23 @@ namespace Entitas.CodeGenerator {
         }
 
         static string addComponentPoolUsings(ClassDeclarationSyntax type) {
-            return isSingletonComponent(type)
-                ? string.Empty
-                : "using System.Collections.Generic;\n\n";
+            if (isSingletonComponent(type)) return string.Empty;
+            var usings = new List<UsingDirectiveSyntax>();
+            var nsName = "";
+            SyntaxNode current = type;
+            while (current != null) {
+                if (current.Kind() == SyntaxKind.NamespaceDeclaration) {
+                    var ns = (NamespaceDeclarationSyntax) current;
+                    nsName = ns.Name + (nsName.Length == 0 ? string.Empty : "." + nsName);
+                    usings.AddRange(ns.Usings);
+                }
+                else if (current.Kind() == SyntaxKind.CompilationUnit) {
+                    usings.AddRange(((CompilationUnitSyntax)current).Usings);
+                }
+                current = current.Parent;
+            }
+            if (nsName.Length > 0) nsName = "using " + nsName + ";\n";
+            return string.Join("", usings.Select(u => u.ToString() + "\n")) + nsName + "using System.Collections.Generic;\n\n";
         }
 
         static string addUsings() {
