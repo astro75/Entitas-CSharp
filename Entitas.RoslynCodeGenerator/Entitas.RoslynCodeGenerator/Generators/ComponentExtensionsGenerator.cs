@@ -15,7 +15,7 @@ namespace Entitas.CodeGenerator {
                     .Where(shouldGenerate)
                     .Aggregate(new List<CodeGenFile>(), (files, type) => {
                         files.Add(new CodeGenFile {
-                            fileName = type.Identifier.Text + classSuffix,
+                            fileName = type.GetFullName() + classSuffix,
                             fileContent = generateComponentExtension(type).ToUnixLineEndings()
                         });
                         return files;
@@ -59,7 +59,6 @@ namespace Entitas.CodeGenerator {
         }
 
         static string addComponentPoolUsings(ClassDeclarationSyntax type) {
-            if (isSingletonComponent(type)) return string.Empty;
             var usings = new List<UsingDirectiveSyntax>();
             var nsName = "";
             SyntaxNode current = type;
@@ -74,8 +73,14 @@ namespace Entitas.CodeGenerator {
                 }
                 current = current.Parent;
             }
-            if (nsName.Length > 0) nsName = "using " + nsName + ";\n";
-            return string.Join("", usings.Select(u => u.ToString() + "\n")) + nsName + "using System.Collections.Generic;\n\n";
+            var result = "";
+            while (nsName.Length > 0) {
+                result += "using " + nsName + ";\n";
+                var dotIndex = nsName.LastIndexOf('.');
+                if (dotIndex == -1) nsName = "";
+                else nsName = nsName.Substring(0, dotIndex);
+            }
+            return string.Join("", usings.Select(u => u.ToString() + "\n")) + result + "using System.Collections.Generic;\n\n";
         }
 
         static string addUsings() {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Entitas.CodeGenerator {
@@ -142,6 +143,20 @@ namespace Entitas.CodeGenerator {
 
         public static IEnumerable<AttributeSyntax> AllAttributes(this ClassDeclarationSyntax type) {
             return type.AttributeLists.SelectMany(l => l.Attributes);
+        }
+
+        public static string GetFullName(this ClassDeclarationSyntax type) {
+            var nsName = "";
+            SyntaxNode current = type;
+            while (current != null) {
+                if (current.Kind() == SyntaxKind.NamespaceDeclaration) {
+                    var ns = (NamespaceDeclarationSyntax)current;
+                    nsName = ns.Name + (nsName.Length == 0 ? string.Empty : "." + nsName);
+                }
+                current = current.Parent;
+            }
+            if (nsName.Length != 0) nsName += ".";
+            return nsName + type.Identifier.Text;
         }
     }
 }
